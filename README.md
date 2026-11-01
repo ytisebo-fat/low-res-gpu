@@ -77,6 +77,13 @@ confined to `LowResGpuPlugin.java` (`computeSceneResolution`, `initFbo`, `shutdo
 FBO/viewport setup in `preSceneDrawToplevel`, the projection line, and `blitSceneFbo`) plus the new
 items at the top of `LowResGpuConfig.java` and the two enums in `config/`.
 
+## Credits
+
+The renderer is RuneLite's GPU plugin, written by Adam and the RuneLite contributors
+(https://github.com/runelite/runelite, `runelite-client/src/main/java/net/runelite/client/plugins/gpu`).
+This plugin only adds the low resolution render target and upscaling on top of their work.
+
 ## License
 
-BSD 2-Clause, same as RuneLite. See `LICENSE`.
+BSD 2-Clause, same as RuneLite. The original copyright notices are kept in every file that came
+from RuneLite. See `LICENSE`.
