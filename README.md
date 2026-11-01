@@ -40,34 +40,48 @@ plugin's *UI scaling mode* to *Nearest Neighbor*.
 
 Anti-aliasing works but softens the blocks; set it to *Disabled* for the hardest pixel edges.
 
+## Status
+
+This plugin is **not on the Plugin Hub**: RuneLite currently doesn't accept new GPU plugins
+(see runelite/plugin-hub#19899). You can run it yourself as a development build, described below.
+A "render scale" option for the official GPU plugin has been suggested to the RuneLite developers.
+
 ## Running it
 
-Requires JDK 11+ (IntelliJ IDEA recommended).
+### What you need
+- **Java 21 (JDK).** Newer versions (24 and up) do **not** work with this project's build tool and
+  fail with *"Unsupported class file major version"*. Java 21 can be installed next to any other
+  Java version you have, for example from https://adoptium.net/temurin/releases/?version=21
+  (choose the JDK `.msi`) or from Oracle.
+- This repository: click the green **Code** button > **Download ZIP**, and unzip it.
 
-1. Turn off the normal **GPU** plugin (and 117 HD). The plugin declares it conflicts with them, so
-   RuneLite will do this for you when you enable it.
-2. From this folder run:
+### Windows
+Double-click **`run.bat`**. It finds Java 21 in the usual install folders, uses it just for this
+project, and starts a RuneLite development client with the plugin loaded. The first start
+downloads RuneLite, which takes a minute or two. If Java 21 is installed somewhere unusual, set the
+environment variable `JAVA21_HOME` to its folder first.
 
-   ```
-   ./gradlew run
-   ```
-
-   (Windows: `gradlew.bat run`). This launches a development RuneLite client with the plugin
-   loaded. To log in with a Jagex account in a development client follow
-   https://github.com/runelite/runelite/wiki/Using-Jagex-Accounts
-3. Enable **Low Res GPU** in the plugin list and open its settings.
-
-## Publishing to the Plugin Hub
-
-Push this folder to a public GitHub repository and open a pull request on
-https://github.com/runelite/plugin-hub adding a file `plugins/low-res-gpu` that contains:
+### macOS / Linux
+In a terminal, inside this folder:
 
 ```
-repository=https://github.com/<you>/low-res-gpu.git
-commit=<full commit hash>
+JAVA_HOME=/path/to/your/jdk-21 ./gradlew run
 ```
 
-The hub reviewers look closely at renderer plugins; expect questions.
+### Logging in with a Jagex account
+A development client can't be started from the Jagex launcher, so it has to reuse your login.
+Follow RuneLite's official guide: https://github.com/runelite/runelite/wiki/Using-Jagex-Accounts
+
+In short: in **RuneLite (configure)** add `--insecure-write-credentials` to *Client arguments*,
+start RuneLite once from the Jagex launcher, then start this plugin's client.
+
+**Be careful:** this saves your login session to `.runelite/credentials.properties` in your user
+folder. Never share that file. When you're done, delete it and remove the argument again.
+
+### Turning it on
+Enable **Low Res GPU** in the plugin list. RuneLite turns the normal **GPU** plugin (and 117 HD)
+off automatically, since only one renderer can run. The low-res settings are at the top of the
+plugin's config.
 
 ## Keeping up with RuneLite
 
