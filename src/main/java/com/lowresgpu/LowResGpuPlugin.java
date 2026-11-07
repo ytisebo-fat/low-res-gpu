@@ -48,6 +48,7 @@ import net.runelite.api.Client;
 import net.runelite.api.Constants;
 import net.runelite.api.FloatProjection;
 import net.runelite.api.GameObject;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.GameState;
 import net.runelite.api.Model;
 import net.runelite.api.Perspective;
@@ -72,6 +73,7 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginInstantiationException;
 import net.runelite.client.plugins.PluginManager;
 import com.lowresgpu.config.AntiAliasingMode;
+import com.lowresgpu.config.LowResMode;
 import com.lowresgpu.config.UIScalingMode;
 import com.lowresgpu.config.UpscaleFilter;
 import com.lowresgpu.template.Template;
@@ -179,6 +181,13 @@ public class LowResGpuPlugin extends Plugin implements DrawCallbacks
 	// viewport. This tiny correction is applied to the projection so the picture stays aligned.
 	private final float[] viewportCorrection = Mat4.identity();
 
+	// Size of the GL viewport inside the scene buffer, used to snap vertices to its pixel grid
+	private int sceneViewportWidth;
+	private int sceneViewportHeight;
+
+	// "Match interface" does nothing unless the interface is scaled up (Stretched Mode), so tell the player once
+	private boolean matchInterfaceHintShown;
+
 	private int textureArrayId;
 
 	private final GLBuffer glUniformBuffer = new GLBuffer("uniform buffer");
@@ -285,6 +294,7 @@ public class LowResGpuPlugin extends Plugin implements DrawCallbacks
 	private int uniBlockMain;
 	private int uniTextureLightMode;
 	private int uniTick;
+	private int uniSnapGrid;
 	private int uniColorblindIntensity;
 	private int uniUiColorblindIntensity;
 	static int uniBase;
@@ -655,6 +665,7 @@ public class LowResGpuPlugin extends Plugin implements DrawCallbacks
 		uniExpandedMapLoadingChunks = glGetUniformLocation(glProgram, "expandedMapLoadingChunks");
 		uniTextureLightMode = glGetUniformLocation(glProgram, "textureLightMode");
 		uniTick = glGetUniformLocation(glProgram, "tick");
+		uniSnapGrid = glGetUniformLocation(glProgram, "snapGrid");
 		uniBlockMain = glGetUniformBlockIndex(glProgram, "uniforms");
 		uniTextures = glGetUniformLocation(glProgram, "textures");
 		uniTextureAnimations = glGetUniformLocation(glProgram, "textureAnimations");
@@ -792,12 +803,19 @@ public class LowResGpuPlugin extends Plugin implements DrawCallbacks
 	 * Work out the internal (low) resolution of the 3D scene for a given output size.
 	 * All values are physical pixels.
 	 */
-	private Dimension computeSceneResolution(int outputWidth, int outputHeight)
+	private Dimension computeSceneResolution(int outputWidth, int outputHeight, int canvasWidth, int canvasHeight)
 	{
 		int width;
 		int height;
 		switch (config.lowResMode())
 		{
+			case MATCH_INTERFACE:
+				// Render the 3D world at the client's own (interface) resolution. With the fixed layout and
+				// Stretched Mode that is 765x503, exactly the original game; with resizable + Stretched Mode
+				// the 3D pixels end up the same size as the interface pixels.
+				width = Math.min(canvasWidth, outputWidth);
+				height = Math.min(canvasHeight, outputHeight);
+				break;
 			case TARGET_HEIGHT:
 			{
 				height = Math.min(config.targetHeight(), outputHeight);
@@ -1003,7 +1021,7 @@ public class LowResGpuPlugin extends Plugin implements DrawCallbacks
 			final int outputHeight = getScaledValue(transform.getScaleY(), stretchedCanvasHeight);
 
 			// The low resolution the scene is actually rendered at
-			final Dimension sceneSize = computeSceneResolution(outputWidth, outputHeight);
+			final Dimension sceneSize = computeSceneResolution(outputWidth, outputHeight, canvasWidth, canvasHeight);
 
 			// Re-create fbo
 			if (sceneOutputWidth != outputWidth
@@ -1033,6 +1051,21 @@ public class LowResGpuPlugin extends Plugin implements DrawCallbacks
 				sceneFboWidth = sceneSize.width;
 				sceneFboHeight = sceneSize.height;
 				lastAntiAliasingMode = antiAliasingMode;
+			}
+
+			// "Match interface" without a scaled-up interface renders at full resolution, which looks like the
+			// plugin isn't working. Explain once in the chat box (again if the player switches back to it later).
+			if (config.lowResMode() != LowResMode.MATCH_INTERFACE)
+			{
+				matchInterfaceHintShown = false;
+			}
+			else if (!matchInterfaceHintShown && sceneSize.width == outputWidth && sceneSize.height == outputHeight
+				&& client.getGameState() == GameState.LOGGED_IN)
+			{
+				matchInterfaceHintShown = true;
+				clientThread.invokeLater(() -> client.addChatMessage(ChatMessageType.GAMEMESSAGE, "",
+					"Low Res GPU: 'Match interface' needs RuneLite's Stretched Mode plugin to have an effect. "
+						+ "Turn on Stretched Mode, or pick another Resolution mode such as 'Pixel size'.", null));
 			}
 
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fboScene);
@@ -1074,6 +1107,8 @@ public class LowResGpuPlugin extends Plugin implements DrawCallbacks
 			// (x' = a*x + b*w, y' = c*y + d*w). This is the identity in fullscreen/resizable mode.
 			final int vw = vx1 - vx0;
 			final int vh = vy1 - vy0;
+			sceneViewportWidth = vw;
+			sceneViewportHeight = vh;
 			viewportCorrection[0] = (float) ((x1 - x0) / vw);
 			viewportCorrection[12] = (float) (((x0 + x1) - (vx0 + vx1)) / vw);
 			viewportCorrection[5] = (float) ((y1 - y0) / vh);
@@ -1112,6 +1147,16 @@ public class LowResGpuPlugin extends Plugin implements DrawCallbacks
 		Mat4.mul(projectionMatrix, Mat4.rotateY(cameraYaw));
 		Mat4.mul(projectionMatrix, Mat4.translate(-cameraX, -cameraY, -cameraZ));
 		glUniformMatrix4fv(uniWorldProj, false, projectionMatrix);
+
+		// Snap vertices to whole pixels of the scene buffer, like the original fixed-point renderer
+		if (config.snapToPixels())
+		{
+			glUniform2f(uniSnapGrid, sceneViewportWidth, sceneViewportHeight);
+		}
+		else
+		{
+			glUniform2f(uniSnapGrid, 0, 0);
+		}
 
 		glUniformMatrix4fv(uniEntityProj, false, IDENTITY);
 
