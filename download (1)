@@ -1,0 +1,12 @@
+.gradle
+build
+.idea/
+.project
+.settings/
+.classpath
+nbactions.xml
+nb-configuration.xml
+nbproject/
+*.class
+# local launcher with a machine-specific Java path
+run-low-res-gpu.bat

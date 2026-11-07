@@ -20,25 +20,54 @@ The 3D cost scales with pixel count, so 800×600 is also much lighter on your GP
 
 ## Settings (top of the plugin's config panel)
 
+### Resolution mode: how big are the pixels?
+
+All modes answer the same question in a different way. They're listed from most to least "original".
+
+| Mode | You choose | Best for | Keep in mind |
+|---|---|---|---|
+| **Match interface (original)** *(default)* | nothing | the authentic look: the 3D world uses exactly the same pixels as the interface | needs RuneLite's **Stretched Mode** plugin, otherwise it renders at full resolution (the plugin tells you in the chat box) |
+| **Pixel size** | block size, e.g. 3 = every pixel becomes 3×3 | crisp, perfectly even blocks | the resolution depends on your screen (3 on 1440p = 480p, on 1080p = 360p) |
+| **Target height** | how many pixels tall, e.g. 480 | a specific "480p" look on any screen | usually not a whole-number scale, so some blocks are a pixel bigger than others |
+| **Fixed resolution** | exact width × height, e.g. 800×600 | an exact retro resolution | on widescreen monitors the pixels become wider than they are tall |
+| **Off** | nothing | comparing with the normal GPU plugin | — |
+
+### Other settings
+
 | Setting | What it does |
 |---|---|
-| Resolution mode | **Target height**: render N pixels tall, width follows your screen (square pixels). **Pixel size**: each rendered pixel becomes an N×N block (crispest, perfectly even). **Fixed resolution**: exactly W×H, e.g. 800×600 (pixels go non-square on widescreen, geometry is still correct). **Off**: behaves like the normal GPU plugin. |
-| Target height | Default 600. On a 1920×1080 screen that is 1067×600. |
-| Pixel size | Default 3. On 1920×1080 that is 640×360, on 2560×1440 it's 854×480. |
-| Fixed width / height | Default 800×600. |
+| Target height / Pixel size / Fixed width & height | The numbers for the matching mode above. Each name says which mode it belongs to; the other modes ignore it. |
 | Upscale filter | Nearest (blocky, default) or Linear (blurry). |
+| Snap to pixels | On by default. Snaps every polygon corner to a whole pixel of the low resolution image, like the original software renderer did with its whole-number (fixed-point) maths. Polygons jump from pixel to pixel as the camera moves, for an authentic wobbly retro look. Turn it off for smooth movement. |
 
 All the regular GPU settings (draw distance, AA, fog, FPS...) follow below.
 
-**Tip for the most even blocks:** use *Pixel size* mode. With *Target height* the scale factor is
-usually not a whole number (1080 / 600 = 1.8), so some rows of blocks are 2 pixels and some are 1.
+**Tip:** for the original fixed-point look, also leave the GPU setting **Remove vertex snapping** off.
+That one controls the slightly jittery model animations of the original game.
 
-**Tip for a fully retro look including the interface:** this plugin only lowers the resolution
-of the 3D world; the UI (inventory, chat, minimap) stays sharp. To make the UI chunky too, also
-enable RuneLite's **Stretched Mode** plugin, turn on *Resizable scaling* (e.g. 200%), and set this
-plugin's *UI scaling mode* to *Nearest Neighbor*.
+## Recommended setups
 
-Anti-aliasing works but softens the blocks; set it to *Disabled* for the hardest pixel edges.
+### The original 2007 game, full screen
+Exactly the original 765×503 game, pixel for pixel, filling your screen.
+
+1. In-game settings: **Game client layout: Fixed – Classic layout**
+2. Turn on RuneLite's **Stretched Mode** plugin and tick **Keep aspect ratio**, otherwise the game is stretched wide. Leave **Integer scaling** off so the game fills your screen.
+3. Low Res GPU: **Resolution mode: Match interface (original)**
+4. Low Res GPU: **UI scaling mode: Nearest Neighbor**, **Snap to pixels** on, **Remove vertex snapping** off
+
+### Modern full screen, retro pixels
+Resizable layout with chunky pixels everywhere.
+
+1. In-game settings: a **Resizable** layout
+2. **Stretched Mode** plugin on. Its **Resizable scaling** setting decides the pixel size: higher = bigger pixels. Try a few values.
+3. Low Res GPU: **Match interface (original)** and **UI scaling mode: Nearest Neighbor**
+
+The 3D world and the interface now have exactly the same pixel size.
+
+### Retro 3D, sharp interface
+Keeps the interface crisp and only makes the 3D world blocky. No Stretched Mode needed.
+
+1. Low Res GPU: **Pixel size** with e.g. 3, or **Target height** with e.g. 480
 
 ## Status
 
@@ -90,6 +119,17 @@ changes its rendering API, re-copy the upstream `gpu` package and re-apply the c
 confined to `LowResGpuPlugin.java` (`computeSceneResolution`, `initFbo`, `shutdownFbo`, the
 FBO/viewport setup in `preSceneDrawToplevel`, the projection line, and `blitSceneFbo`) plus the new
 items at the top of `LowResGpuConfig.java` and the two enums in `config/`.
+
+## Changelog
+
+**1.1**
+- New default resolution mode: *Match interface (original)*. The 3D world uses exactly the interface's pixels; with the Fixed layout and Stretched Mode that is the original 765×503 game.
+- New: *Snap to pixels*, which snaps polygon corners to the low resolution pixel grid for the original fixed-point look (suggested on Reddit).
+- Resolution modes are ordered from most to least original, with a clearer explanation in the settings and the README. Settings that only apply to one mode now say so in their name.
+- New "Recommended setups" section in the README.
+
+**1.0**
+- First release.
 
 ## Credits
 
