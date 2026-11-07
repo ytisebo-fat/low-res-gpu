@@ -63,6 +63,10 @@ uniform int expandedMapLoadingChunks;
 uniform ivec3 base;
 uniform int tick;
 uniform vec2 textureAnimations[TEXTURE_COUNT];
+// Size in pixels of the viewport being rendered to (the low resolution scene buffer).
+// When x > 0, every vertex is snapped to a whole pixel of that grid, like the original
+// software renderer which used integer (fixed-point) screen coordinates.
+uniform vec2 snapGrid;
 
 out vec4 fColor;
 noperspective centroid out float fHsl;
@@ -94,6 +98,12 @@ void main() {
   fDepth = screenPos.z / screenPos.w;
 #endif
   screenPos.z += float(bias) / 128.0;
+  if (snapGrid.x > 0.0 && screenPos.w > 0.0) {
+    // clip space -> viewport pixels, round to a whole pixel, and back again
+    vec2 pixel = (screenPos.xy / screenPos.w * 0.5 + 0.5) * snapGrid;
+    pixel = floor(pixel + 0.5);
+    screenPos.xy = ((pixel / snapGrid) * 2.0 - 1.0) * screenPos.w;
+  }
   gl_Position = screenPos;
 #ifdef BIAS_DEBUG
   fColor = vec4(clamp(bias, 0, 12) / 12.0, 0.0, 0.0, 1.0);

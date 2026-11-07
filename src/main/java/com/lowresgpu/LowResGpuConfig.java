@@ -46,23 +46,25 @@ public interface LowResGpuConfig extends Config
 	@ConfigItem(
 		keyName = "lowResMode",
 		name = "Resolution mode",
-		description = "How the internal 3D resolution is chosen.<br>"
-			+ "Target height: render N pixels tall, width follows your screen's aspect ratio.<br>"
-			+ "Pixel size: every rendered pixel becomes an N x N block on screen (crispest).<br>"
-			+ "Fixed resolution: render at exactly width x height (e.g. 800 x 600), pixels may be non-square.<br>"
-			+ "Off: render at native resolution like the normal GPU plugin.",
+		description = "How big the pixels of the 3D world are.<br>"
+			+ "<b>Match interface (original)</b>: same resolution as the interface. Needs the Stretched Mode plugin.<br>"
+			+ "With the Fixed layout this is exactly the original 765x503 game.<br>"
+			+ "<b>Pixel size</b>: every pixel becomes an N x N block. Crisp and even.<br>"
+			+ "<b>Target height</b>: render N pixels tall, e.g. 480. Blocks can be slightly uneven.<br>"
+			+ "<b>Fixed resolution</b>: exactly width x height, e.g. 800 x 600. Pixels may be non-square.<br>"
+			+ "<b>Off</b>: full resolution, like the normal GPU plugin.",
 		position = -10
 	)
 	default LowResMode lowResMode()
 	{
-		return LowResMode.TARGET_HEIGHT;
+		return LowResMode.MATCH_INTERFACE;
 	}
 
 	@Range(min = 120, max = 2160)
 	@ConfigItem(
 		keyName = "targetHeight",
-		name = "Target height",
-		description = "Internal render height in pixels when using 'Target height' mode.",
+		name = "Target height (Target height mode)",
+		description = "Internal render height in pixels.<br>Only used when Resolution mode is 'Target height'.",
 		position = -9
 	)
 	default int targetHeight()
@@ -73,8 +75,8 @@ public interface LowResGpuConfig extends Config
 	@Range(min = 1, max = 16)
 	@ConfigItem(
 		keyName = "pixelSize",
-		name = "Pixel size",
-		description = "Size of each rendered pixel on screen when using 'Pixel size' mode.",
+		name = "Pixel size (Pixel size mode)",
+		description = "Size of each rendered pixel on screen, e.g. 3 = every pixel becomes a 3x3 block.<br>Only used when Resolution mode is 'Pixel size'.",
 		position = -8
 	)
 	default int pixelSize()
@@ -85,8 +87,8 @@ public interface LowResGpuConfig extends Config
 	@Range(min = 160, max = 3840)
 	@ConfigItem(
 		keyName = "fixedWidth",
-		name = "Fixed width",
-		description = "Internal render width when using 'Fixed resolution' mode.",
+		name = "Fixed width (Fixed mode)",
+		description = "Internal render width.<br>Only used when Resolution mode is 'Fixed resolution'.",
 		position = -7
 	)
 	default int fixedWidth()
@@ -97,8 +99,8 @@ public interface LowResGpuConfig extends Config
 	@Range(min = 120, max = 2160)
 	@ConfigItem(
 		keyName = "fixedHeight",
-		name = "Fixed height",
-		description = "Internal render height when using 'Fixed resolution' mode.",
+		name = "Fixed height (Fixed mode)",
+		description = "Internal render height.<br>Only used when Resolution mode is 'Fixed resolution'.",
 		position = -6
 	)
 	default int fixedHeight()
@@ -116,6 +118,19 @@ public interface LowResGpuConfig extends Config
 	default UpscaleFilter upscaleFilter()
 	{
 		return UpscaleFilter.NEAREST;
+	}
+
+	@ConfigItem(
+		keyName = "snapToPixels",
+		name = "Snap to pixels",
+		description = "Snap every corner of every polygon to a whole pixel of the low resolution image, like the<br>"
+			+ "original software renderer, which used whole-number (fixed-point) screen positions.<br>"
+			+ "Polygons visibly jump from pixel to pixel when the camera moves, for a wobbly retro look.",
+		position = -4
+	)
+	default boolean snapToPixels()
+	{
+		return true;
 	}
 
 	// ---- Settings below are inherited from RuneLite's GPU plugin ----

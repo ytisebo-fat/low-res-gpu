@@ -31,8 +31,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum LowResMode
 {
-	TARGET_HEIGHT("Target height"),
+	// Ordered from most to least "original" looking
+	MATCH_INTERFACE("Match interface (original)"),
 	PIXEL_SIZE("Pixel size"),
+	TARGET_HEIGHT("Target height"),
 	FIXED_RESOLUTION("Fixed resolution"),
 	OFF("Off (native)");
 
