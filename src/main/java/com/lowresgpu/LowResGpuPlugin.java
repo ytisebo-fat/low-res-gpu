@@ -181,7 +181,9 @@ public class LowResGpuPlugin extends Plugin implements DrawCallbacks
 	// viewport. This tiny correction is applied to the projection so the picture stays aligned.
 	private final float[] viewportCorrection = Mat4.identity();
 
-	// Size of the GL viewport inside the scene buffer, used to snap vertices to its pixel grid
+	// GL viewport inside the scene buffer, used to snap vertices to its pixel grid
+	private int sceneViewportX;
+	private int sceneViewportY;
 	private int sceneViewportWidth;
 	private int sceneViewportHeight;
 
@@ -294,7 +296,7 @@ public class LowResGpuPlugin extends Plugin implements DrawCallbacks
 	private int uniBlockMain;
 	private int uniTextureLightMode;
 	private int uniTick;
-	private int uniSnapGrid;
+	private int uniSnapViewport;
 	private int uniColorblindIntensity;
 	private int uniUiColorblindIntensity;
 	static int uniBase;
@@ -547,7 +549,8 @@ public class LowResGpuPlugin extends Plugin implements DrawCallbacks
 				log.debug("Toggle {}", configChanged.getKey());
 				setupGpuFlags();
 			}
-			else if (configChanged.getKey().equals("uiScalingMode") || configChanged.getKey().equals("colorBlindMode"))
+			else if (configChanged.getKey().equals("uiScalingMode") || configChanged.getKey().equals("colorBlindMode")
+				|| configChanged.getKey().equals("snapToPixels"))
 			{
 				clientThread.invokeLater(() ->
 				{
@@ -630,6 +633,8 @@ public class LowResGpuPlugin extends Plugin implements DrawCallbacks
 					return "#define SAMPLING_MODE " + config.uiScalingMode().ordinal() + "\n";
 				case "colorblind_mode":
 					return "#define COLORBLIND_MODE " + config.colorBlindMode().ordinal() + "\n";
+				case "snap_config":
+					return config.snapToPixels() ? "#define SNAP_TO_PIXELS\n" : "\n";
 			}
 			return null;
 		});
@@ -665,7 +670,7 @@ public class LowResGpuPlugin extends Plugin implements DrawCallbacks
 		uniExpandedMapLoadingChunks = glGetUniformLocation(glProgram, "expandedMapLoadingChunks");
 		uniTextureLightMode = glGetUniformLocation(glProgram, "textureLightMode");
 		uniTick = glGetUniformLocation(glProgram, "tick");
-		uniSnapGrid = glGetUniformLocation(glProgram, "snapGrid");
+		uniSnapViewport = glGetUniformLocation(glProgram, "snapViewport");
 		uniBlockMain = glGetUniformBlockIndex(glProgram, "uniforms");
 		uniTextures = glGetUniformLocation(glProgram, "textures");
 		uniTextureAnimations = glGetUniformLocation(glProgram, "textureAnimations");
@@ -1107,6 +1112,8 @@ public class LowResGpuPlugin extends Plugin implements DrawCallbacks
 			// (x' = a*x + b*w, y' = c*y + d*w). This is the identity in fullscreen/resizable mode.
 			final int vw = vx1 - vx0;
 			final int vh = vy1 - vy0;
+			sceneViewportX = vx0;
+			sceneViewportY = sceneFboHeight - vy1;
 			sceneViewportWidth = vw;
 			sceneViewportHeight = vh;
 			viewportCorrection[0] = (float) ((x1 - x0) / vw);
@@ -1148,15 +1155,9 @@ public class LowResGpuPlugin extends Plugin implements DrawCallbacks
 		Mat4.mul(projectionMatrix, Mat4.translate(-cameraX, -cameraY, -cameraZ));
 		glUniformMatrix4fv(uniWorldProj, false, projectionMatrix);
 
-		// Snap vertices to whole pixels of the scene buffer, like the original fixed-point renderer
-		if (config.snapToPixels())
-		{
-			glUniform2f(uniSnapGrid, sceneViewportWidth, sceneViewportHeight);
-		}
-		else
-		{
-			glUniform2f(uniSnapGrid, 0, 0);
-		}
+		// Snap vertices to whole pixels of the scene buffer, like the original fixed-point renderer.
+		// The snapping code is only compiled into the shaders while the option is on (see createTemplate).
+		glUniform4f(uniSnapViewport, sceneViewportX, sceneViewportY, sceneViewportWidth, sceneViewportHeight);
 
 		glUniformMatrix4fv(uniEntityProj, false, IDENTITY);
 

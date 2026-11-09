@@ -28,6 +28,7 @@
 //#define ZBUF_DEBUG
 
 #include colorblind_mode
+#include snap_config
 
 uniform sampler2DArray textures;
 uniform float brightness;
@@ -42,6 +43,11 @@ in vec2 fUv;
 in float fFogAmount;
 #ifdef ZBUF_DEBUG
 in float fDepth;
+#endif
+
+#ifdef SNAP_TO_PIXELS
+uniform vec4 snapViewport;  // xy = viewport offset, zw = viewport size, in pixels
+noperspective in vec2 fRawPixel;
 #endif
 
 out vec4 FragColor;
@@ -61,6 +67,26 @@ float linear_depth(float depth) {
 #endif
 
 void main() {
+#ifdef SNAP_TO_PIXELS
+  // Snapping moves every triangle by up to half a pixel. That is fine for the picture, but
+  // surfaces drawn on top of each other (e.g. a pattern painted on a banner) each move
+  // differently, so the depth test starts picking the wrong one and they flicker.
+  // Fix: give this pixel the depth the *unsnapped* triangle would have had here.
+  // Everything below is affine within the triangle, so the derivatives are exact.
+  // (Done first, before any discard, so the derivatives are well defined.)
+  {
+    vec2 p = gl_FragCoord.xy - snapViewport.xy;   // this pixel, in viewport pixels
+    vec2 d = p - fRawPixel;                       // how far snapping moved this point
+    vec2 gz = vec2(dFdx(gl_FragCoord.z), dFdy(gl_FragCoord.z));
+    mat2 J = mat2(dFdx(fRawPixel), dFdy(fRawPixel));  // d(raw position) / d(screen position)
+    float depth = gl_FragCoord.z;
+    if (abs(determinant(J)) > 1.0e-6 && dot(d, d) < 4.0) {
+      vec2 gradRaw = gz * inverse(J);  // depth gradient of the original triangle
+      depth += dot(gradRaw, d);
+    }
+    gl_FragDepth = depth;
+  }
+#endif
   vec4 c;
 
   if (fTextureId > 0) {
