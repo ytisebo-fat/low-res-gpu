@@ -90,7 +90,19 @@ project, and starts a RuneLite development client with the plugin loaded. The fi
 downloads RuneLite, which takes a minute or two. If Java 21 is installed somewhere unusual, set the
 environment variable `JAVA21_HOME` to its folder first.
 
-### macOS / Linux
+### macOS
+1. Install **Java 21** for Mac, for example the `.pkg` from
+   https://adoptium.net/temurin/releases/?version=21&os=mac (choose *aarch64* for Apple Silicon
+   Macs like the MacBook Air M1 and newer, *x64* for Intel Macs).
+2. Double-click **`run.command`** in this folder. It finds Java 21 by itself and starts the
+   RuneLite development client with the plugin loaded.
+
+The first time, macOS may say it can't open the file because it's from an unidentified developer.
+Right-click **`run.command`** > **Open** > **Open** once; after that a double-click works.
+If it says you don't have permission, open Terminal, type `chmod +x ` (with a space), drag
+`run.command` into the window, press Enter, and try again.
+
+### Linux
 In a terminal, inside this folder:
 
 ```
@@ -101,7 +113,8 @@ JAVA_HOME=/path/to/your/jdk-21 ./gradlew run
 A development client can't be started from the Jagex launcher, so it has to reuse your login.
 Follow RuneLite's official guide: https://github.com/runelite/runelite/wiki/Using-Jagex-Accounts
 
-In short: in **RuneLite (configure)** add `--insecure-write-credentials` to *Client arguments*,
+In short: in **RuneLite (configure)** add `--insecure-write-credentials` to *Client arguments*
+(on macOS, run `/Applications/RuneLite.app/Contents/MacOS/RuneLite --configure` in Terminal to open it),
 start RuneLite once from the Jagex launcher, then start this plugin's client.
 
 **Be careful:** this saves your login session to `.runelite/credentials.properties` in your user
