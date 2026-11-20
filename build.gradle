@@ -39,6 +39,11 @@ tasks.register('run', JavaExec) {
 	mainClass = pluginMainClass
 
 	jvmArgs "-ea"
+	// On macOS, use the same module flags as RuneLite's own Mac launcher. Without them startup fails with
+	// "module java.desktop does not export com.apple.eawt to unnamed module".
+	if (System.getProperty('os.name').toLowerCase().contains('mac')) {
+		jvmArgs "--add-opens=java.desktop/com.apple.eawt=ALL-UNNAMED", "--add-opens=java.desktop/sun.awt=ALL-UNNAMED"
+	}
 	args "--developer-mode", "--debug"
 }
 
