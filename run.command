@@ -20,6 +20,13 @@ fi
 
 echo "Using Java from $JDK"
 export JAVA_HOME="$JDK"
+
+# Jagex account login saved by capture-jagex-login.command (macOS workaround, see the README)
+if [ -f "$HOME/.runelite/jagex-login.env" ]; then
+	echo "Using the Jagex login saved by capture-jagex-login.command"
+	# shellcheck disable=SC1091
+	source "$HOME/.runelite/jagex-login.env"
+fi
 chmod +x ./gradlew 2>/dev/null
 ./gradlew --stop >/dev/null 2>&1
 ./gradlew run

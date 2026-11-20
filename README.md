@@ -120,6 +120,17 @@ start RuneLite once from the Jagex launcher, then start this plugin's client.
 **Be careful:** this saves your login session to `.runelite/credentials.properties` in your user
 folder. Never share that file. When you're done, delete it and remove the argument again.
 
+**On macOS this usually doesn't work:** the Jagex Launcher on Mac passes extra arguments to RuneLite
+that replace `--insecure-write-credentials`, so the file never gets written. Use this instead:
+
+1. Start Old School RuneScape with **RuneLite** from the Jagex Launcher and wait for the login screen.
+2. Double-click **`capture-jagex-login.command`** in this folder. It reads the login the Jagex Launcher
+   gave RuneLite and saves it to `~/.runelite/jagex-login.env` (readable only by you).
+3. Close RuneLite and start **`run.command`**; it picks up the saved login automatically.
+
+The same rules apply: never share `jagex-login.env`, and delete it when you're done testing
+(`rm ~/.runelite/jagex-login.env`). If the login stops working later, repeat the steps to save a fresh one.
+
 ### Turning it on
 Enable **Low Res GPU** in the plugin list. RuneLite turns the normal **GPU** plugin (and 117 HD)
 off automatically, since only one renderer can run. The low-res settings are at the top of the
